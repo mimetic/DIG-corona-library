@@ -1,0 +1,3 @@
+[submodule "scripts/textrender"]
+	path = scripts/textrender
+	url = https://mimetic@github.com/mimetic/corona-textrender.git
