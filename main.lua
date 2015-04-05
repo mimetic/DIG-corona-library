@@ -36,7 +36,7 @@ require( 'scripts.dmc.dmc_kompatible' )
 
 -- My useful function collection
 local funx = require("funx")
-local textwrap = require("textwrap")
+local textwrap = require("scripts.textrender.textrender")
 
 -- Make a local copy of the application settings global
 local screenW, screenH = display.contentWidth, display.contentHeight
@@ -48,9 +48,9 @@ local midscreenY = screenH*(0.5)
 local w = screenW/2 - 50
 --w = 270
 
-local textStyles = funx.loadTextStyles("textstyles.txt", system.ResourceDirectory)
+local textStyles = funx.loadTextStyles("scripts/textrender/textstyles.txt", system.ResourceDirectory)
 
-local mytext = funx.readFile("sampletext.txt")
+local mytext = funx.readFile("textrender-sample-text.txt")
 
 -- To cache, set the cache directory
 local cacheDir = "textrender_cache"
@@ -62,7 +62,7 @@ funx.mkdir (cacheDir, "",false, system.CachesDirectory)
 ------------------------------------------------------------
 ------------------------------------------------------------
 
-local reps = 50
+local reps = 1
 
 ------------------------------------------------------------
 ------------------------------------------------------------
@@ -265,7 +265,7 @@ end
 
 if textwrap.db and textwrap.db:isopen() then
 	textwrap.db:close()
-	print ("MAIN TESTING: Close DB")
+	print ("MAIN TESTING: Close DB. The textwrap database was left open?")
 end
 
 
@@ -306,5 +306,3 @@ gobutton:toFront()
 if (reps == 1) then
 	go()
 end
-
-
