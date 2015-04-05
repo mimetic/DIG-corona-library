@@ -17,7 +17,7 @@ This is "Normal" text. <br/>
 <br>  
 <br>  
 
-<p class="Heading 1">Updates:</p>
+<p class="title">Updates:</p>
 
 <p>Unordered List:</p>
 <ul>
