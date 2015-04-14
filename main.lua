@@ -45,12 +45,12 @@ local screenOffsetW, screenOffsetH = display.contentWidth -	 display.viewableCon
 local midscreenX = screenW*(0.5)
 local midscreenY = screenH*(0.5)
 
-local w = screenW/2 - 50
+local w = 510
 --w = 270
 
 local textStyles = funx.loadTextStyles("scripts/textrender/textstyles.txt", system.ResourceDirectory)
 
-local mytext = funx.readFile("textrender-sample-text.txt")
+local mytext = funx.readFile("textrender-sample-text.html")
 
 -- To cache, set the cache directory
 local cacheDir = "textrender_cache"
@@ -91,28 +91,10 @@ local params = {
 	cacheToDB = true,
 	isHTML = true,
 	useHTMLSpacing = true,
+	hyperlinkFillColor = "250,250,0,180",
+	hyperlinkTextColor = "0,0,255,255",
+	testing = false,
 }
-
-------------
--- Speed tests, cache vs. no cache
-
-local function drawAndDelete(params, reps)
-	local startTime = system.getTimer()
-	reps = reps or 10
-	for i = 1, reps do
-		--print ("Render text #" .. i)
-		local t = textwrap.autoWrappedText(params)
-		t:setReferencePoint(display.TopLeftReferencePoint)
-		t.x = 50
-		t.y = 50
-		t:removeSelf()
-		t = nil
-	end
-	local tdiff = system.getTimer() - startTime
-	return tdiff
-end
-
-
 
 
 local tmsg = ""
@@ -130,74 +112,12 @@ bkgd.strokeWidth = 20
 bkgd:setStrokeColor(0,200,200)
 
 local t, t2, textframe, textframe2
-local gobutton
 
 local function go()
-
-	gobutton.isVisible = false
 
 	------------
 	-- We clear the cache before begining, so first render creates a cache, second uses it.
 	textwrap.clearAllCaches(cacheDir)
-
-	if t then 
-		t:removeSelf()
-		t = nil
-	end
-
-	if t2 then 
-		t2:removeSelf()
-		t2 = nil
-	end
-
-	if textframe then 
-		textframe:removeSelf()
-		textframe = nil
-	end
-
-	if textframe2 then 
-		textframe2:removeSelf()
-		textframe2 = nil
-	end
-
-
-	if (reps > 10) then 
-		params.cacheDir = ""
-		params.cacheToDB = false
-		params.text = mytext
-		
-		-- RENDER WITHOUT CACHING
-		local tdiffNoCache = drawAndDelete(params,reps)
-
-		params.cacheDir = ""
-		params.cacheToDB = true
-		params.text = mytext
-		
-		-- RENDER USING THE CACHE
-		local tdiffCached = drawAndDelete(params, reps)
-
-		------------
-
-		tmsg = "RENDERING TIME\n"
-		tmsg = tmsg .. "<br>"
-		tmsg = tmsg .. "<br>"
-		tmsg = tmsg .. "<br>"
-		tmsg = tmsg .. "<p>"
-		tmsg = tmsg .. "NO CACHE: ("..reps.. " times) Time elapsed = " .. math.floor(tdiffNoCache) .. " microseconds (".. tdiffNoCache/1000 .." seconds) (average = " .. (math.floor(tdiffNoCache)/reps) .. " microseconds)"
-		tmsg = tmsg .. "</p>"
-		tmsg = tmsg .. "<p>"
-		tmsg = tmsg .. "\nCACHED: ("..reps.. " times) Time elapsed = " .. math.floor(tdiffCached) .. " microseconds (".. tdiffCached/1000 .." seconds) (average = " .. (math.floor(tdiffCached)/reps) .. " microseconds)"
-		tmsg = tmsg .. "</p>"
-		--params.text = tmsg
-		--local tout = textwrap.autoWrappedText(tmsg)
-		--tout:setReferencePoint(display.TopLeftReferencePoint)
-		--tout.x = 200
-		--tout.y = 100
-
-
-	end
-
-
 
 	-- PRINT THE RESULTS
 	
@@ -211,13 +131,6 @@ local function go()
 
 	params.testing = false
 
-	params.cacheDir = ""
-	params.cacheToDB = true
-	t2 = textwrap.autoWrappedText(params)
-	t2.x = w + 50
-	t2.y = 100 + t.yAdjustment
-
-
 	local yAdjustment = t.yAdjustment
 	
 	-- Labels
@@ -226,12 +139,6 @@ local function go()
 	label1.x = 20
 	label1.y = 90
 	label1:setFillColor(100,100,0) -- transparent
-	
-	local label2 = display.newText("This Text is from the Cache", 0, 0, nil, 18)
-	label2:setReferencePoint(display.BottomLeftReferencePoint)
-	label2.x = t2.x
-	label2.y = 90
-	label2:setFillColor(100,100,0) -- transparent
 	
 	-- Frame the text
 	textframe = display.newRect(0,0, w+2, t.height + 2)
@@ -244,20 +151,8 @@ local function go()
 	textframe:toBack()
 
 
-	-- Frame the text
-	textframe2 = display.newRect(0,0, w+2, t.height + 2)
-	textframe2:setFillColor(100,100,0,20) -- transparent
-	textframe2:setStrokeColor(0,0,0,255)
-	textframe2.strokeWidth = 1
-	textframe2:setReferencePoint(display.TopLeftReferencePoint)
-	textframe2.x = t2.x
-	textframe2.y = 100
-	textframe2:toBack()
-	
 	bkgd:toBack()
 	
-	gobutton.isVisible = true
-
 end
 
 
@@ -290,17 +185,6 @@ local wfb = widget.newButton{
 			onRelease = toggleWireframe,
 		}
 wfb:toFront()
-
-
-gobutton = widget.newButton{
-			label = "GO",
-			labelColor = { default={ 200, 1, 1 }, over={ 250, 0, 0, 0.5 } },
-			fontSize = 20,
-			x =screenW - 200,
-			y=50,
-			onRelease = go,
-		}
-gobutton:toFront()
 
 -- Run if we're not testing reps
 if (reps == 1) then
