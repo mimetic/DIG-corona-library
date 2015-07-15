@@ -28,8 +28,6 @@ DEALINGS IN THE SOFTWARE.
 -- USEFUL FUNCTIONS.
 -- ===================
 
-print ("THIS IS THE FUNX INSIDE THE CORONA-TEXTRENDER")
-
 local FUNX = {}
 
 -- Requires json library
@@ -134,7 +132,10 @@ end
 
 
 -- Add an invisible positioning rectangle for a group
-local function addPosRect(g, vis, c)
+-- @param g [group] Group into which we add a position rect at 0,0
+-- @param vis [boolean] True = visible, False = hidden
+-- @param c [table]	RGBa color table {r,g,b,a}
+local function addPosRect(g, vis, c )
 	local r = display.newRect(g, 0,0,10,10)
 	r.isVisible = vis
 	c = c or {250,0,0,100}
@@ -419,8 +420,7 @@ local function substitutions (s, t, escapeTheKeys)
 	for wrd in r do
 		local searchTerm = tclean[wrd] or wrd
 		if (t[wrd]) then
-			s = gsub(s, "{{"..searchTerm.."}}", t[wrd])
---print ("{{"..searchTerm.."}}", t[wrd],s)
+			s = gsub(s, "{{"..searchTerm.."}}", tostring(t[wrd]))
 		end
 	end
 	return s
@@ -566,12 +566,21 @@ end
 
 
 -- Dump an XML table
-local function dumptable(_class, no_func, depth, maxDepth)
+local function dumptable(_class, no_func, depth, maxDepth, filter)
+		
+		--  = string.match("foo 123 bar", '%d%d%d') -- %d matches a digit
+		local function passedFilter(t)
+			if not filter then
+				return true
+			end
+			return string.match(t, filter)
+		end
+
 	if (not _class) then
 		print ("dumptable: not a class.");
 		return;
 	end
-
+	
 	if(depth==nil) then depth=0; end
 	local str="";
 	for n=0,depth,1 do
@@ -596,21 +605,23 @@ local function dumptable(_class, no_func, depth, maxDepth)
 								print (str.."\t"..tostring(i).." = (not expanding this internal table)");
 				else
 					print (str.."\t"..tostring(i).." =");
-					dumptable(field, no_func, depth+1);
+					dumptable(field, no_func, depth+1, maxDepth, filter);
 				end
 			else
-				if(type(field)=="number") then
-					print (str.." [num]\t"..tostring(i).."="..field);
-				elseif(type(field) == "string") then
-					print (str.." [str]\t"..tostring(i).."=".."\""..field.."\"");
-				elseif(type(field) == "boolean") then
-					print (str.." [bool]\t"..tostring(i).."=".."\""..tostring(field).."\"");
-				else
-					if(not no_func)then
-						if(type(field)=="function")then
-							print (str.."\t"..tostring(i).."()");
-						else
-							print (str.."\t"..tostring(i).."<userdata=["..type(field).."]>");
+				if (passedFilter(i)) then
+					if(type(field)=="number") then
+						print (str.." [num]\t"..tostring(i).."="..field);
+					elseif(type(field) == "string") then
+						print (str.." [str]\t"..tostring(i).."=".."\""..field.."\"");
+					elseif(type(field) == "boolean") then
+						print (str.." [bool]\t"..tostring(i).."=".."\""..tostring(field).."\"");
+					else
+						if(not no_func)then
+							if(type(field)=="function")then
+								print (str.."\t"..tostring(i).."()");
+							else
+								print (str.."\t"..tostring(i).."<userdata=["..type(field).."]>");
+							end
 						end
 					end
 				end
@@ -1007,7 +1018,7 @@ local function loadData(filePath)
 		t = file:read( "*a" )
 		io.close( file )
 	else
-		print ("funx.loadData: No file found at "..tostring(filePath))
+		print ("scripts.funx.loadData: No file found at "..tostring(filePath))
 	end
 	return t
 end
@@ -1079,7 +1090,7 @@ local function saveTable(t, filename, path)
 	end
 
 	path = path or system.DocumentsDirectory
-	--print ("funx.saveTable: save to "..filename)
+	--print ("scripts.funx.saveTable: save to "..filename)
 
 	local json = json.encode (t)
 	local filePath = system.pathForFile( filename, path )
@@ -1090,7 +1101,7 @@ local function loadTable(filename, path)
 	path = path or system.DocumentsDirectory
 	if (fileExists(filename,path)) then
 		local filePath = system.pathForFile( filename, path )
-		--print ("funx.loadTable: load from "..filePath)
+		--print ("scripts.funx.loadTable: load from "..filePath)
 
 		local t = {}
 		local f = loadData(filePath)
@@ -1264,7 +1275,7 @@ end
 --------------------------------------------------------
 
 local function replaceWildcard(text, v, p)
---print ("funx.replaceWildcard", text, v, p)
+--print ("scripts.funx.replaceWildcard", text, v, p)
 	if (text and v) then
 		p = p or "*"
 		text = text:gsub("%"..p, v)
@@ -1344,7 +1355,7 @@ local function loadImageFile(filename, wildcardPath, whichSystemDirectory, showT
 		
 	-- DEBUGGING TOOL
 	if (showTraceOnFailure) then
-		print ("funx.loadImageFile called by:")
+		print ("scripts.funx.loadImageFile called by:")
 		traceback()
 	end
 
@@ -1452,7 +1463,7 @@ local function canConnectWithServer(url, showActivity, callback, testing)
 
 				if (isSimulator) then
 					event.isReachable = true
-					print ("funx.canConnectWithServer: Corona simulator: Forcing a TRUE for event.isReachable because this fails in simulator.")
+					print ("scripts.funx.canConnectWithServer: Corona simulator: Forcing a TRUE for event.isReachable because this fails in simulator.")
 				end
 				
 
@@ -1472,7 +1483,7 @@ local function canConnectWithServer(url, showActivity, callback, testing)
 	if network.canDetectNetworkStatusChanges then
 			network.setStatusListener( url, MyNetworkReachabilityListener )
 	else
-			print("funx.canConnectWithServer: network reachability not supported on this platform")
+			print("scripts.funx.canConnectWithServer: network reachability not supported on this platform")
 	end
 end
 
@@ -2187,7 +2198,7 @@ local function buildShadow(w,h,sw,opacity)
 	bottom:rotate( -90 )
 
 	if (h<(2*corner) or w<(2*corner)) then
-		print ("funx.buildShadow: ERROR! The shadow box is to small..I can't compute this one")
+		print ("scripts.funx.buildShadow: ERROR! The shadow box is to small..I can't compute this one")
 	end
 	--scale
 
@@ -2907,7 +2918,7 @@ local function hideObject(obj, fxTime, opacity, onComplete)
 
 		local function transitionComplete(obj)
 			if (not obj) then
-				print ("funx.hideObject:transitionComplete: WARNING: object is gone!")
+				print ("scripts.funx.hideObject:transitionComplete: WARNING: object is gone!")
 				return false
 			end
 			local currentAlpha = math.ceil(obj.alpha * 100)/100
@@ -3379,11 +3390,11 @@ end
 -- we have to allow for a special code for line breaks: [[[cr]]]
 --------------------------------------------------------
 
-local function autoWrappedText (text, font, size, lineHeight, color, width, textAlignment, opacity, minCharCount, targetDeviceScreenSize, letterspacing, maxHeight, minWordLen, textstyles, defaultStyle, cacheDir)
+local function autoWrappedText ( p )
 
-	local textwrap = require ("textwrap")
+	local textwrap = require ("scripts.textrender.textrender")
 
-	return textwrap.autoWrappedText(text, font, size, lineHeight, color, width, textAlignment, opacity, minCharCount, targetDeviceScreenSize, letterspacing, maxHeight, minWordLen, textstyles, defaultStyle, cacheDir)
+	return textwrap.autoWrappedText( p )
 
 end
 
@@ -4850,6 +4861,33 @@ local function setCase(case, str)
 	return str
 end
 
+------------------------------------------------------------
+------------------------------------------------------------
+-- Alert the user that something significant has happened by flashing an object
+function FUNX.flashObject(obj, t, a)
+	if (obj._flashObject == true) then
+		return
+	end
+	
+	obj._flashObject = true
+	t = t or 100
+	a = a or 0.5
+	obj._originalAlpha = obj.alpha
+
+		local function removeFlasher()
+			obj._originalAlpha = nil
+			obj._flashObject = nil
+		end
+
+		local function fadeOutAgain()
+			transition.to(obj, { alpha = obj._originalAlpha, time=t,  
+				onComplete=removeFlasher } )
+		end
+
+	-- Fade In the white screen
+	transition.to(obj, { alpha = a, time = t, onComplete = fadeOutAgain } )
+
+end
 
 
 
