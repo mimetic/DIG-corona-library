@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<dialog>
+
+	<comments>
+		(This node is ignored by the parser.)
+
+		NOTE: DEFAULT SETTINGS FILE
+		Values here will be over-ridden by values in the user settings file, "_user/settings.xml"
+
+		- "true" and "false" are translated to booleans
+		- a number written as a percent, e.g. 10%, can be interpreted later, but is read as a string
+		- Numbers are returned as numeric, not string
+		- hAlignment = left, right or center
+		- slideview.autoFadeToolsTime > 0 means slideView is handling navbar + tools, etc., auto fading
+		  don't also set navbar.autoFadeTime, but leave it at "0"
+
+		- pageMarkNumbering = "chapter" or "book"
+		  Date formatting:
+		  http://www.lua.org/pil/22.1.html
+
+	</comments>
+
+	<dialog>
+
+		<!-- dims everything behind the dialog -->
+		<dimmerColor value="0,0,0,60%" />
+		
+		<msgDialogBookstore>You are connected to {bookstore}.</msgDialogBookstore>
+		<msgDialogSignin>To download your books from the bookstore, enter your username and password below:</msgDialogSignin>
+		<msgDialogChildLock>To lock books which are rated appropriate for 18+ years of age, enter a lock code below:</msgDialogChildLock>
+		<msgConfirmFieldDoesNotMatch>The confirmation does not match!</msgConfirmFieldDoesNotMatch>
+
+
+		<!-- "Done" button settings, used with text boxes -->
+		<textboxDoneLabel value="Done" />
+		<textboxDoneLabelFont value="AvenirNext-Regular" />
+		<textboxDoneFontSize value="Done" />
+		<textboxDoneWidth value="50" />
+		<textboxDoneHeight value="20" />
+		<textboxDoneLabelColor value="250,250,250" />
+		<textboxDoneLabelOverColor value="250,250,250" />
+		<textboxDoneFillColor value="45,138,228" />
+		<textboxDoneStrokeColor value="20%,20%,20%" />
+		<textboxDoneStroke value="1" />
+		<textboxDoneCornerRadius value="2" />
+		<textboxDoneEmboss value="false" />
+		
+
+		<!-- margins are percent of width of screen: margins are T,L,B,R -->
+		<dialogWindowMargins value="5%, 5%, 5%, 5%" />
+		<dialogInnerMargins value="2%, 2%, 3%, 2%" />
+		<dialogBackgroundColor value="230,230,230,100%" />
+		<dialogTextInputFieldsTop value="15%" />
+		<dialogBackgroundStrokeColor value="50,50,50,100%" />
+		<dialogBackgroundStroke value="10" />
+
+		<cornerRadius value="30" />
+		
+		<headerBackground value="200,200,200,100%" />
+		<headerHeight value="80" />
+
+		<dialogFont value="Avenir-Light" />
+		<dialogFontColor value="100,100,100,100%" />
+		<dialogFontSize value="16" />
+		<dialogTextLineHeight value="20" />
+		<dialogTextSpaceAfter value="24" />
+		<dialogBlockSpacing value="40" />
+		<dialogInfoTextAlignment value="Center" />
+		
+		<dialogTitle value="Settings" />
+		<dialogTitleFont value="Avenir-Medium" />
+		<dialogTitleFontSize value="24" />
+		<dialogTitleFontColor value="60,60,60,100%" />
+		
+		<dialogContentY value= "10%" />
+		
+		<!-- we position these text fields from the left of the settings window -->
+		<dialogTextInputFieldXOffset value="10%" />
+		<fieldLabelWidth value="20%" />
+		<!-- In general, this isn't so good. It limits text width to a percentage of the dialog width, rather than using the inner margins -->
+		<fieldDescWidth notInUse="100%" />
+		<fieldTextColor value="0,0,0,100%" />
+		<fieldFrameBackground value="255,255,255,255" />
+		<fieldFrameStrokeColor value="220,220,220,100%" />
+		<fieldFrameStrokeWidth value="1" />
+		
+		<spaceAfterDesc value = "16" />
+		<buttonSpaceAfter value="20" />
+				
+		<showSubmitButton value="false" />
+		<showCancelButton value="true" />
+
+		<!-- some defaults -->
+		<dialogButtonLabelFont value="Avenir-Medium" />
+		<dialogButtonLabelFontColor value="120,120,220,100%" />
+		<dialogButtonLabelFontOverColor value="120,120,120,100%" />
+
+		<!-- close button -->
+		<dialogCloseButton value="images/button-check-round-black.png" />
+		<dialogCloseButtonOver value="images/button-check-round-black-over.png" />
+		<dialogCloseButtonWidth value="44" />
+		<dialogCloseButtonHeight value="44" />
+		
+		<!-- cancel button -->
+		<dialogCancelButton value="images/button-x-round-black.png" />
+		<dialogCancelButtonOver value="images/button-x-round-black-over.png" />
+		<dialogCancelButtonWidth value="44" />
+		<dialogCancelButtonHeight value="44" />
+		
+
+	</dialog>
+
+</dialog>
