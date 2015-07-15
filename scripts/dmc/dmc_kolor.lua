@@ -73,7 +73,7 @@ end
 -- DMC Library Config
 --====================================================================--
 
-local dmc_lib_data, dmc_lib_info, dmc_lib_location
+local dmc_lib_data, dmc_lib_info, dmc_lib_location, dmc_lib_func
 
 -- boot dmc_library with boot script or
 -- setup basic defaults if it doesn't exist
@@ -123,7 +123,7 @@ dmc_lib_data.dmc_kolor = dmc_lib_data.dmc_kolor or {}
 local DMC_KOLOR_DEFAULTS = {
 	default_color_space='RGB',
 	cache_is_active=false,
-	make_global=false,
+	make_global=true,
 	-- named_color_file, no default,
 	-- named_color_format, no default,
 }
@@ -208,10 +208,10 @@ end
 
 
 
-function readInNamedColors( file, format )
+local function readInNamedColors( file, format )
 	-- print( 'readInNamedColors' )
 
-	local options = options or {}
+	local options = {}
 	options.lines = false
 
 	local file_path, status, data
@@ -304,7 +304,7 @@ end
 
 -- if we have file with named colors then process it
 --
-print ("dmc_kolor_data.named_color_file",dmc_kolor_data.named_color_file)
+--print ("dmc_kolor_data.named_color_file",dmc_kolor_data.named_color_file)
 if dmc_kolor_data.named_color_file and dmc_kolor_data.named_color_format then
 	readInNamedColors( dmc_kolor_data.named_color_file, dmc_kolor_data.named_color_format )
 end
@@ -330,7 +330,7 @@ function translateRGBToHDR( ... )
 	elseif type( args[2] ) == 'table' and args[2].type=='gradient' then
 
 		-- gradient RGB
-		t = args[2].color1
+		local t = args[2].color1
 		args[2].color1 = { t[1]/255, t[2]/255, t[3]/255, t[4] }
 
 		t = args[2].color2
@@ -605,9 +605,11 @@ function Kolor.newLine( ... )
 	local o = Display.newLine( ... )
 
 	-- set the default behavior
+	--[[
 	print( '\n' )
 	print( 'WARNING dmc_kolor: there is a bug in Corona newLine. use setStrokeRGB() instead' )
 	print( '\n' )
+	--]]
 	--[[
 	if dmc_kolor_data.default_color_space == 'HDR' then
 		o.setStrokeColor = o.setStrokeHDR
@@ -697,6 +699,7 @@ end
 
 if dmc_kolor_data.make_global == true then
 	_G.display = Kolor
+	--print ("DMC Kolor is GLOBAL")
 else
 	_G.display = Display
 end
