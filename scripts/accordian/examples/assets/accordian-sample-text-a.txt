@@ -1,0 +1,3 @@
+<p class="Left" >
+	Hit events propagate until they are <b>handled.</b> This means that if you have <i>multiple objects overlaying</i> each other in the display hierarchy, and a hit event listener has been applied to each, the <i>hit event will propagate through all of these objects.</i> 
+</p>

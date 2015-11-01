@@ -1,0 +1,86 @@
+{
+  "elements": [
+    {
+      "isText": true,
+      "id": "store",
+      "text": "You are connected to <span font='Avenir-Black'>{{shelves:bookstore}}</span> &nbsp;<i>({{shelves:registerDisplayURL}})</i>",
+      "style": "dialogLargeDescription"
+    },
+    {
+      "isSecure": false,
+      "value": "",
+      "label": "Username",
+      "id": "username",
+      "height": 30,
+      "width": "100%",
+      "desc": "Sign up for a new account to access your publications.",
+      "inputType": "default",
+      "fieldType": "textfield"
+    },
+    {
+      "isSecure": true,
+      "value": "",
+      "label": "Password",
+      "id": "password",
+      "height": 30,
+      "width": "100%",
+      "desc": "",
+      "inputType": "default",
+      "fieldType": "textfield"
+    },
+    {
+      "isSecure": false,
+      "value": "",
+      "label": "Email",
+      "id": "email",
+      "height": 30,
+      "width": "100%",
+      "desc": "",
+      "inputType": "email",
+      "fieldType": "textfield"
+    },
+    {
+      "isSecure": false,
+      "value": "",
+      "label": "First Name",
+      "id": "firstname",
+      "height": 30,
+      "width": "100%",
+      "desc": "",
+      "inputType": "default",
+      "fieldType": "textfield"
+    },
+    {
+      "isSecure": false,
+      "value": "",
+      "label": "Last Name",
+      "id": "lastname",
+      "height": 30,
+      "width": "100%",
+      "desc": "",
+      "inputType": "default",
+      "fieldType": "textfield"
+    },
+    {
+      "isSpace": true,
+      "height": 30
+    },
+    {
+      "isButton": true,
+      "functionName": "createAccount",
+      "label": "Create Account",
+      "id": "createAccount",
+      "height": 44,
+      "width": 250,
+      "xAlign" : "center",
+      "desc": ""
+    }
+  ],
+  "dialogTitle": "Create New Account",
+  "dialogInnerMargins": "2%, 2%, 2%, 2%",
+  "dialogWindowMargins": "5%, 5%, 15%, 5%",
+  "dialogTextInputFieldXOffset": "20%",
+  "fieldLabelWidth": "20%",
+  "fieldDescWidth": "70%",
+  "lockCodeSize": 4
+}

@@ -1,0 +1,63 @@
+{
+  "elements": [
+    {
+      "isText": true,
+      "id": "store",
+      "text": "You are connected to <span font='Avenir-Black'>{{shelves:bookstore}}</span> &nbsp;<i>({{shelves:registerDisplayURL}})</i>",
+      "style": "dialogLargeDescription"
+    },
+    {
+      "isSecure": false,
+      "value": "OogaBooga",
+      "label": "Username",
+      "id": "username",
+      "height": 30,
+      "width": 250,
+      "desc": "Enter your username and password to access books from the bookstore.",
+      "inputType": "default",
+	  "fieldType": "textfield"
+    },
+    {
+      "isSecure": true,
+      "value": "pass",
+      "label": "Password",
+      "id": "password",
+      "height": 30,
+      "width": 250,
+      "desc": "",
+      "inputType": "default",
+      "fieldType": "textfield"
+   },
+    {
+      "isSecure": true,
+      "value": "syspass",
+      "label": "SysPass",
+      "id": "syspassword",
+      "height": 30,
+      "width": 250,
+      "desc": "Lock all books marked 18+ years with a pass code.",
+      "inputType": "default",
+      "fieldType": "textfield"
+    }
+  ],
+  "dialogBackgroundColor": "230,230,230,100%",
+  "dialogInnerMargins": "2%, 2%, 2%, 2%",
+  "dialogWindowMargins": "5%, 5%, 15%, 5%",
+  "dialogTextInputFieldsTop": "",
+  "dialogFont": "Avenir-Light",
+  "dialogFontSize": 18,
+  "dialogFontColor": "100,100,100,100%",
+  "dialogTextLineHeight": 24,
+  "dialogTextSpaceAfter": 32,
+  "dialogBlockSpacing": 40,
+  "dialogInfoTextAlignment": "Center",
+  "dialogTitle": "Settings",
+  "dialogTitleFont": "Avenir-Medium",
+  "dialogTitleFontSize": 24,
+  "dialogTitleFontColor": "60,60,60,100%",
+  "dialogContentY": "20%",
+  "dialogTextInputFieldXOffset": "10%",
+  "fieldLabelWidth": "20%",
+  "fieldDescWidth": "70%",
+  "lockCodeSize": 4
+}

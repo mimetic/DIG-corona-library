@@ -28,10 +28,9 @@ DEALINGS IN THE SOFTWARE.
 -- USEFUL FUNCTIONS.
 -- ===================
 
-local FUNX = {}
+print ("THIS IS THE FUNX INSIDE MAIN SCRIPTS FOLDER.")
 
-local pathToFunxFolder = "scripts/funx/"
-local dotPathToFunxFolder = "scripts.funx."
+local FUNX = {}
 
 -- Requires json library
 local json = require ( "json" )
@@ -135,10 +134,7 @@ end
 
 
 -- Add an invisible positioning rectangle for a group
--- @param g [group] Group into which we add a position rect at 0,0
--- @param vis [boolean] True = visible, False = hidden
--- @param c [table]	RGBa color table {r,g,b,a}
-local function addPosRect(g, vis, c )
+local function addPosRect(g, vis, c)
 	local r = display.newRect(g, 0,0,10,10)
 	r.isVisible = vis
 	c = c or {250,0,0,100}
@@ -249,9 +245,6 @@ end
 
 
 -----------------
--- Traceback
--- Writes a call stack, showing what called the current code.
--- Hopefully.
 local function traceback ()
 	print ("FUNX.TRACEBACK:")
 	local level = 1
@@ -426,7 +419,8 @@ local function substitutions (s, t, escapeTheKeys)
 	for wrd in r do
 		local searchTerm = tclean[wrd] or wrd
 		if (t[wrd]) then
-			s = gsub(s, "{{"..searchTerm.."}}", tostring(t[wrd]))
+			s = gsub(s, "{{"..searchTerm.."}}", t[wrd])
+--print ("{{"..searchTerm.."}}", t[wrd],s)
 		end
 	end
 	return s
@@ -572,21 +566,12 @@ end
 
 
 -- Dump an XML table
-local function dumptable(_class, no_func, depth, maxDepth, filter)
-		
-		--  = string.match("foo 123 bar", '%d%d%d') -- %d matches a digit
-		local function passedFilter(t)
-			if not filter then
-				return true
-			end
-			return string.match(t, filter)
-		end
-
+local function dumptable(_class, no_func, depth, maxDepth)
 	if (not _class) then
 		print ("dumptable: not a class.");
 		return;
 	end
-	
+
 	if(depth==nil) then depth=0; end
 	local str="";
 	for n=0,depth,1 do
@@ -611,23 +596,21 @@ local function dumptable(_class, no_func, depth, maxDepth, filter)
 								print (str.."\t"..tostring(i).." = (not expanding this internal table)");
 				else
 					print (str.."\t"..tostring(i).." =");
-					dumptable(field, no_func, depth+1, maxDepth, filter);
+					dumptable(field, no_func, depth+1);
 				end
 			else
-				if (passedFilter(i)) then
-					if(type(field)=="number") then
-						print (str.." [num]\t"..tostring(i).."="..field);
-					elseif(type(field) == "string") then
-						print (str.." [str]\t"..tostring(i).."=".."\""..field.."\"");
-					elseif(type(field) == "boolean") then
-						print (str.." [bool]\t"..tostring(i).."=".."\""..tostring(field).."\"");
-					else
-						if(not no_func)then
-							if(type(field)=="function")then
-								print (str.."\t"..tostring(i).."()");
-							else
-								print (str.."\t"..tostring(i).."<userdata=["..type(field).."]>");
-							end
+				if(type(field)=="number") then
+					print (str.." [num]\t"..tostring(i).."="..field);
+				elseif(type(field) == "string") then
+					print (str.." [str]\t"..tostring(i).."=".."\""..field.."\"");
+				elseif(type(field) == "boolean") then
+					print (str.." [bool]\t"..tostring(i).."=".."\""..tostring(field).."\"");
+				else
+					if(not no_func)then
+						if(type(field)=="function")then
+							print (str.."\t"..tostring(i).."()");
+						else
+							print (str.."\t"..tostring(i).."<userdata=["..type(field).."]>");
 						end
 					end
 				end
@@ -1024,7 +1007,7 @@ local function loadData(filePath)
 		t = file:read( "*a" )
 		io.close( file )
 	else
-		print ("scripts.funx.loadData: No file found at "..tostring(filePath))
+		print ("funx.loadData: No file found at "..tostring(filePath))
 	end
 	return t
 end
@@ -1096,7 +1079,7 @@ local function saveTable(t, filename, path)
 	end
 
 	path = path or system.DocumentsDirectory
-	--print ("scripts.funx.saveTable: save to "..filename)
+	--print ("funx.saveTable: save to "..filename)
 
 	local json = json.encode (t)
 	local filePath = system.pathForFile( filename, path )
@@ -1107,7 +1090,7 @@ local function loadTable(filename, path)
 	path = path or system.DocumentsDirectory
 	if (fileExists(filename,path)) then
 		local filePath = system.pathForFile( filename, path )
-		--print ("scripts.funx.loadTable: load from "..filePath)
+		--print ("funx.loadTable: load from "..filePath)
 
 		local t = {}
 		local f = loadData(filePath)
@@ -1281,7 +1264,7 @@ end
 --------------------------------------------------------
 
 local function replaceWildcard(text, v, p)
---print ("scripts.funx.replaceWildcard", text, v, p)
+--print ("funx.replaceWildcard", text, v, p)
 	if (text and v) then
 		p = p or "*"
 		text = text:gsub("%"..p, v)
@@ -1361,7 +1344,7 @@ local function loadImageFile(filename, wildcardPath, whichSystemDirectory, showT
 		
 	-- DEBUGGING TOOL
 	if (showTraceOnFailure) then
-		print ("scripts.funx.loadImageFile called by:")
+		print ("funx.loadImageFile called by:")
 		traceback()
 	end
 
@@ -1469,7 +1452,7 @@ local function canConnectWithServer(url, showActivity, callback, testing)
 
 				if (isSimulator) then
 					event.isReachable = true
-					print ("scripts.funx.canConnectWithServer: Corona simulator: Forcing a TRUE for event.isReachable because this fails in simulator.")
+					print ("funx.canConnectWithServer: Corona simulator: Forcing a TRUE for event.isReachable because this fails in simulator.")
 				end
 				
 
@@ -1489,28 +1472,10 @@ local function canConnectWithServer(url, showActivity, callback, testing)
 	if network.canDetectNetworkStatusChanges then
 			network.setStatusListener( url, MyNetworkReachabilityListener )
 	else
-			print("scripts.funx.canConnectWithServer: network reachability not supported on this platform")
+			print("funx.canConnectWithServer: network reachability not supported on this platform")
 	end
 end
 
-
-
---------------
---- Given an array of values, e.g. {"a", "b", "c" }
--- convert to an array of key = true, so we can very quickly
--- ask whether  value is in the array.
--- IF we pass anything other than a table, return what was passed.
-local function tableConvertValuesToKeys(t)
-	if ( "table" == type(t) ) then
-		local t2 = {}
-		for k,v in pairs (t) do
-			t2[v] = true
-		end
-		return t2
-	else
-		return t
-	end
-end
 
 
 --------------
@@ -1650,7 +1615,7 @@ end
 -------------------------------------------------
 local function dimScreen(transitionTime, color, scaling, onTouch)
 
-	transitionTime = tonumber(transitionTime or 300)
+	transitionTime = transitionTime or 300
 	color = color or { 0.75 * OPAQUE }
 	local opacity = applyPercent(color[4],OPAQUE) or (0.75 * OPAQUE)
 	scaling = scaling or 1
@@ -2222,7 +2187,7 @@ local function buildShadow(w,h,sw,opacity)
 	bottom:rotate( -90 )
 
 	if (h<(2*corner) or w<(2*corner)) then
-		print ("scripts.funx.buildShadow: ERROR! The shadow box is to small..I can't compute this one")
+		print ("funx.buildShadow: ERROR! The shadow box is to small..I can't compute this one")
 	end
 	--scale
 
@@ -2643,20 +2608,15 @@ end
 -------------------------------------------------
 -- loadingSpinner
 -- Show a loading spinner graphic
-
--- *** THIS REQUIRES GRAPHICS IN THE "funx" DIRECTORY! ***
--- If these graphics are missing, well, it will break.
-
 -- Params is a table:
--- @param sheet [string] The path to a sprite sheet for the spinner
--- @param delay [int] Time to wait before showing message. If our loading happens fast enough, we don't need
--- @param handle [table] Timer reference. If this value is set, then the spinner will be cancelled!
+-- handle = a timer reference. If set, then this MUST be a command to cancel the timer and spinner.
+-- delay = time to wait before showing message. If our loading happens fast enough, we don't need
 -- the message to show.
 -- Examples of the table:
 -- { handle = mytimerhandle }
 -- { message="message", delay=1000 }
 --[[
-	local p = { sheet = message="Loading", delay=1000}
+	local p = { message="Loading", delay=1000}
 	local myTimerHandle = spinner(p)
 	...
 	local p = { handle = myTimerHandle }
@@ -2667,60 +2627,78 @@ local function spinner(p)
 	p = p or {}
 
 	local delay = p.delay or 500
+	local message = p.message or "Loading..."
+
+	local r = display.newGroup()
+
+	local function showMessage(event)
+		--local message = event.source.params.message
+		print ("Message",message)
+		if (message) then
+			tellUser(message)
+		end
+		native.setActivityIndicator( true );
+
+	end
 
 
-	--------------------------spinnerSprite
-	-- Show spinner
+	local function showSpinner()
+		print ("SHOW SPINNER")
+		Runtime:removeEventListener( "enterFrame", showSpinner )
+		r.isVisible = true
+	end
+
+	local function hideSpinner()
+		print ("HIDE SPINNER")
+		Runtime:removeEventListener( "enterFrame", hideSpinner )
+		--r.isVisible = false
+	end
+
+
 	if (not p.handler) then
-
-		local spinnerSprite
-
-		local sheetInfo = require( dotPathToFunxFolder .. "spinner")
-		local myImageSheet = graphics.newImageSheet( pathToFunxFolder.."spinner.png", sheetInfo:getSheet() )
-		local spinnerSprite = display.newSprite( myImageSheet , sheetInfo.sequenceData )
-	
-		-- Put in screen center
-		spinnerSprite.x = display.contentCenterX
-		spinnerSprite.y = display.contentCenterY
-	
-		-- I like this size reduction
-		spinnerSprite:scale( 0.5, 0.5 )
-		
-		-- Hide the spinner until called
-		spinnerSprite.isVisible = false
-
-			local function showSpinner()
-				spinnerSprite.isVisible = true
-				spinnerSprite:play()
-				
-				if (p.message) then
-					tellUser(p.message)
-				end
-					
-			end
-	
-
 		--print ("start timer")
-		--print ("spinner started at",os.time(),"seconds")
-		local t = timer.performWithDelay( delay, showSpinner )
+		print ("spinner started at",os.time(),"seconds")
+		local t = timer.performWithDelay( 300, function() print ("Timer!");showMessage(message); end )
 		t.starttime = os.time()
 
-		t._spinnerObject = spinnerSprite
+		rr = display.newRect(0,0,100,100)
+		rr.x = midscreenX
+		rr.y = midscreenY
+		rr:setFillColor (255,0,0)
+		r:insert(rr)
+
+		t.recto = r
+
+		Runtime:addEventListener( "enterFrame", showSpinner );
 
 		return t
 	else
-	--------------------------
-	-- Hide spinner
+		--print ("Spinner canceled!")
+		print ("spinner cancelled at",os.time(),"seconds after ",os.time()-p.handler.starttime,"seconds.")
 
---print ("Spinner canceled!")
---print ("spinner cancelled at",os.time(),"seconds after ",os.time()-p.handler.starttime,"seconds.")
+		p.handler.recto:removeSelf()
+		p.handler.recto = nil
+
+		Runtime:addEventListener( "enterFrame", hideSpinner );
+
 		timer.cancel(p.handler)
-		p.handler._spinnerObject:pause()
-		p.handler._spinnerObject:removeSelf()
-		p.handler._spinnerObject = nil
+
+		native.setActivityIndicator( false );
+
 	end
 end
 
+local rr = display.newGroup()
+local function showSpinner()
+		rr = display.newRect(0,0,100,100)
+		rr.x = midscreenX
+		rr.y = midscreenY
+		rr:setFillColor (255,0,0)
+end
+
+local function hideSpinner()
+		rr:removeSelf()
+end
 
 
 local function activityIndicator( mode )
@@ -2929,7 +2907,7 @@ local function hideObject(obj, fxTime, opacity, onComplete)
 
 		local function transitionComplete(obj)
 			if (not obj) then
-				print ("scripts.funx.hideObject:transitionComplete: WARNING: object is gone!")
+				print ("funx.hideObject:transitionComplete: WARNING: object is gone!")
 				return false
 			end
 			local currentAlpha = math.ceil(obj.alpha * 100)/100
@@ -3401,11 +3379,11 @@ end
 -- we have to allow for a special code for line breaks: [[[cr]]]
 --------------------------------------------------------
 
-local function autoWrappedText ( p )
+local function autoWrappedText (text, font, size, lineHeight, color, width, textAlignment, opacity, minCharCount, targetDeviceScreenSize, letterspacing, maxHeight, minWordLen, textstyles, defaultStyle, cacheDir)
 
-	local textwrap = require ("scripts.textrender.textrender")
+	local textwrap = require ("textwrap")
 
-	return textwrap.autoWrappedText( p )
+	return textwrap.autoWrappedText(text, font, size, lineHeight, color, width, textAlignment, opacity, minCharCount, targetDeviceScreenSize, letterspacing, maxHeight, minWordLen, textstyles, defaultStyle, cacheDir)
 
 end
 
@@ -3494,7 +3472,6 @@ local function referenceAdjustedXY (obj, x, y, newReferencePoint, scale, shadowO
 
 	if (obj and newReferencePoint) then
 		scale = scale or 1
-		shadowOffset = shadowOffset or 0
 		local w = obj.width
 		local h = obj.height
 
@@ -3799,24 +3776,10 @@ local function convertAnchorToReferencePointName (obj)
 end
 
 
-
--------------------------------------------------------
--- Reanchor to new point
--- This version of reanchoring adjusts the x,y of an object for a new anchor point, using
--- anchorX and anchorY
-local function reanchor(obj, ax, ay)
-	local dx, dy = obj.anchorX - ax, obj.anchorY - ay
-	local newX = obj.x - (dx * obj.width)
-	local newY = obj.y - (dy * obj.height)
-	obj.anchorX, obj.anchorY = ax, ay
-	obj.x = newX
-	obj.y = newY
-end
-
-
 -- Keep an object in the same place on screen while changing its anchor point.
 -- This is useful if an object is positioned Top Left (0,0), then we want to change the
 -- anchor point but not change the objects position on screen.
+-- *** This depends on 
 local function reanchorToCenter (obj, a, x, y)
 	
 	if not a then return x,y; end
@@ -4128,75 +4091,82 @@ local function strokeGroupObject(obj,params)
 	params.matte = params.matte or 0
 
 	-- The frame
-	local temp
-	
-	-- FRAME
-	local f = display.newGroup()
-	--f.anchorChildren = true
+	local f, temp
 
 	params.style = lower(params.style)
 	if ( params.style == "solid") then
 
+		temp = obj.anchorChildren
+		obj.anchorChildren = true
+		f = display.newRect(0,0, obj.contentWidth + params.stroke + params.matte, obj.contentHeight + params.stroke + params.matte)
+		obj:insert(f)
+		f:toBack()
+		obj.anchorChildren = temp
 
-		local fr = display.newRect(f, 0,0, w + params.stroke, h + params.stroke)
-		fr.strokeWidth = params.stroke or 0
-		fr:setStrokeColor(color[1], color[2], color[3], color[4])
+		f.strokeWidth = params.stroke or 0
+		f:setStrokeColor(color[1], color[2], color[3], color[4])
 		if (mattecolor) then
-			fr:setFillColor(mattecolor[1], mattecolor[2], mattecolor[3], mattecolor[4])
+			f:setFillColor(mattecolor[1], mattecolor[2], mattecolor[3], mattecolor[4])
 		end
-		
+		if (params.tintColor) then
+			local outerObj = framingObject(f, 0, tintColor, 0, "0,0,0,0")	
+			obj:insert(outerObj)
+		end
 
 	elseif (params.style == "thick-thin") then
 		
-		local sw = params.stroke or 0
-		local innerW = floor(sw * 0.5) or 1
-		local outerW = floor(sw * 0.25) or 1
-		local padding = (sw-(innerW + outerW)) or 1
-
-		local innerFrame = display.newRect(f, 0,0, w + innerW - 1, h + innerW - 1 )
-		innerFrame.strokeWidth = innerW
-		innerFrame:setStrokeColor(color[1], color[2], color[3], color[4])
-		if (mattecolor) then
-			innerFrame:setFillColor(mattecolor[1], mattecolor[2], mattecolor[3], mattecolor[4])
-		end
-
-		local outerOffset = innerW + padding + outerW/2
-		local outerFrame = display.newRect(f, 0,0, w - 1 + 2*outerOffset, h - 1 + 2*outerOffset)
-		outerFrame.strokeWidth = outerW
-		outerFrame:setStrokeColor(color[1], color[2], color[3], color[4])
-		outerFrame:setFillColor(255)
-		outerFrame:toBack()
+		f = display.newGroup()
+		f.anchorChildren = true
 		
-	elseif (params.style == "thin-thick") then
+		temp = obj.anchorChildren
+		obj.anchorChildren = true
+		local innerFrame = display.newRect(f, 0,0, obj.contentWidth + params.stroke + params.matte, obj.contentHeight + params.stroke + params.matte)
+		obj:insert(f)
+		f:toBack()
+		obj.anchorChildren = temp
+
 		local sw = params.stroke or 0
 		local innerW = floor(sw * 0.25) or 1
 		local outerW = floor(sw * 0.5) or 1
 		local padding = (sw-(innerW + outerW)) or 1
 
-		local innerFrame = display.newRect(f, 0,0, w + innerW, h + innerW )
 		innerFrame.strokeWidth = innerW
 		innerFrame:setStrokeColor(color[1], color[2], color[3], color[4])
 		if (mattecolor) then
 			innerFrame:setFillColor(mattecolor[1], mattecolor[2], mattecolor[3], mattecolor[4])
 		end
 
-		local outerOffset = innerW + padding + outerW/2
-		local outerFrame = display.newRect(f, 0,0, w + 2*outerOffset, h + 2*outerOffset)
-		outerFrame.strokeWidth = outerW
-		outerFrame:setStrokeColor(color[1], color[2], color[3], color[4])
-		outerFrame:setFillColor(255)
-		outerFrame:toBack()
+		local outerObj = framingObject(f, padding, tintColor, outerW, color)	
+		f:insert(outerObj)
+		
+--		obj:insert(o);
+--		outerObj.x = 0
+--		outerObj.y = 0
+--		o.x = 0
+--		o.y = 0
+		
+	elseif (params.style == "thin-thick") then
+		local sw = params.stroke or 0
+		local innerW = floor(sw * 0.5) or 1
+		local outerW = floor(sw * 0.25) or 1
+		local padding = (sw-(innerW + outerW)) or 1
+--print (params.stroke, innerW,outerW,padding)
+
+		f.strokeWidth = innerW
+		f:setStrokeColor(color[1], color[2], color[3], color[4])
+		if (mattecolor) then
+			f:setFillColor(mattecolor[1], mattecolor[2], mattecolor[3], mattecolor[4])
+		end
+
+		local outerObj = framingObject(f, padding, tintColor, outerW, color)
+		obj:insert(outerObj)
+		
+--		obj:insert(o);
+--		outerObj.x = 0
+--		outerObj.y = 0
+--		o.x = 0
+--		o.y = 0
 	end
-	
-	temp = obj.anchorChildren
-	obj.anchorChildren = true
-
-	obj:insert(f)
-
-	f:toBack()	
-	obj.anchorChildren = temp
-	
-
 	return f
 
 end
@@ -4880,33 +4850,6 @@ local function setCase(case, str)
 	return str
 end
 
-------------------------------------------------------------
-------------------------------------------------------------
--- Alert the user that something significant has happened by flashing an object
-function FUNX.flashObject(obj, t, a)
-	if (obj._flashObject == true) then
-		return
-	end
-	
-	obj._flashObject = true
-	t = t or 100
-	a = a or 0.5
-	obj._originalAlpha = obj.alpha
-
-		local function removeFlasher()
-			obj._originalAlpha = nil
-			obj._flashObject = nil
-		end
-
-		local function fadeOutAgain()
-			transition.to(obj, { alpha = obj._originalAlpha, time=t,  
-				onComplete=removeFlasher } )
-		end
-
-	-- Fade In the white screen
-	transition.to(obj, { alpha = a, time = t, onComplete = fadeOutAgain } )
-
-end
 
 
 
@@ -4998,6 +4941,7 @@ FUNX.hasFieldCodes = hasFieldCodes
 FUNX.hasFieldCodesSingle = hasFieldCodesSingle
 FUNX.hasNetConnection = hasNetConnection
 FUNX.hideObject = hideObject
+FUNX.hideSpinner = hideSpinner
 FUNX.indexOfSystemDirectory = indexOfSystemDirectory
 FUNX.initSystemEventHandler = initSystemEventHandler
 FUNX.inTable = inTable
@@ -5033,7 +4977,6 @@ FUNX.positionObjectAroundCenter = positionObjectAroundCenter
 FUNX.positionObjectWithReferencePoint = positionObjectWithReferencePoint
 FUNX.setAnchorFromReferencePoint = setAnchorFromReferencePoint
 FUNX.convertAnchorToReferencePointName = convertAnchorToReferencePointName
-FUNX.reanchor = reanchor
 FUNX.reanchorToCenter = reanchorToCenter
 FUNX.printFuncName = printFuncName
 FUNX.ratioToFitMargins  = ratioToFitMargins 
@@ -5058,6 +5001,7 @@ FUNX.setCase = setCase
 FUNX.setFillColorFromString = setFillColorFromString
 --FUNX.setTextStyles  = setTextStyles 
 FUNX.showContentToLocal = showContentToLocal
+FUNX.showSpinner = showSpinner
 FUNX.showTestBox  = showTestBox 
 FUNX.showTestLine  = showTestLine 
 FUNX.shrinkAway  = shrinkAway 
@@ -5073,7 +5017,6 @@ FUNX.flattenTable  = flattenTable
 FUNX.substitutions  = substitutions 
 FUNX.table_multi_sort = table_multi_sort
 FUNX.table_sort = table_sort
-FUNX.tableConvertValuesToKeys = tableConvertValuesToKeys
 FUNX.tableCopy = tableCopy
 FUNX.tableIsEmpty = tableIsEmpty
 FUNX.tablelength  = tablelength 
