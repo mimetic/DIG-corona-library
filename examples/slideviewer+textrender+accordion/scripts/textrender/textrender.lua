@@ -1,6 +1,6 @@
 -- textrender.lua
 --
--- Version 3.1
+-- Version 3.1.1
 --
 -- Copyright (C) 2015 David I. Gross. All Rights Reserved.
 --
@@ -48,12 +48,17 @@ DEALINGS IN THE SOFTWARE.
 ]]
 --display.setDrawMode( "wireframe", false )
 -- TESTING
-local testing = false
+-- Check the GLOBAL testing variable
+local testing = _TESTING
+local noCache = _NOCACHE
 
--- Don't use the line-wrap cache
-local noCache = false
+
+if (testing) then
+	print ("**** WARNING: textrender: TESTING ON ****")
+end
+
 if (noCache) then
-	print ("**** WARNING: TEXTWRAP: CACHING TURNED OFF FOR TESTING!!!! ****")
+	print ("**** WARNING: textrender: CACHING TURNED OFF FOR TESTING!!!! ****")
 end
 
 -- Main var for this module
@@ -192,7 +197,8 @@ local inline = {
 	var = true,
 }
 --]]
-local blockTags = {
+
+local isBlockTag = {
 	address = true,
 	blockquote = true,
 	center = true,
@@ -212,7 +218,7 @@ local blockTags = {
 	ul = true,
 }
 
-local listTags = {
+local isListTag = {
 	ol = true,
 	ul = true,
 }
@@ -223,6 +229,31 @@ local listTags = {
 
 
 --------------------------------------------------------
+-- Convert CSS relational font sizings to percent
+-- e.g. x-large = 150%
+-- Return the new font size based on the one give
+-- If no keyword found, then return current fontsize
+-- Source: http://www.trishasdesignstudio.com/font-size-conversion-chart.asp
+local function keywordFontsizeRatio (keyword)
+	local sizes = {
+		xxsmall	= 0.55,
+		xsmall	= 0.625,
+		small 	= 0.8,
+		medium 	= 1,
+		large	= 1.2,
+		xlarge	= 1.5,
+		xxlarge	= 2.55,
+	}
+	return (sizes[lower(keyword:gsub("%-",""))] or 1)
+end
+
+
+local function convertCSSFontsizeKeyword(keyword, fontsize)
+	fontsize = fontsize or 14	-- default to 14px if something goes wrong
+	return fontsize * keywordFontsizeRatio(keyword)
+end
+
+--------------------------------------------------------
 -- Convert pt values to pixels, for font sizing.
 -- We use the font height for 1em.
 -- Basically, I think we should just use the pt sizing as
@@ -231,18 +262,33 @@ local listTags = {
 -- Using 72 pixels per point:
 -- 12pt => 72/72  * 12pt => 12px
 -- 12pt => 132/72 * 12pt => 24px
+-- @param t = [string] The new font size, including units or as text, e.g. 'small'
+-- @param fontsize = [number] Fallback font-size, usually whatever it current is before we try to change it
 --------------------------------------------------------
-local function convertValuesToPixels (t, fontsize, deviceMetrics)
+local function convertValuesToPixels (t, fontsizeFallback, deviceMetrics)
 	if (t ~= nil) then
 		t = trim(t)
+		-- Get the numeric part of the size, e.g. 15pt -> 15
 		local _, _, n = find(t, "^(%--%d+)")
+		-- Get the units, e.g. pt or px, e.g. 15pt -> pt
 		local _, _, u = find(t, "(%a%a)$")
+		
+		-- Handle textual fontsizing, e.g. "x-large"
+--print ("A -----> ", t, fontsizeFallback)
+		n = convertCSSFontsizeKeyword(t, n)
+--print ("B -----> ", t, n)
+		
+		if (tonumber(n) == 0) then
+			n = fontsizeFallback
+		end
 	
 		if ((u == "pt" ) and deviceMetrics) then
 			n = n * (deviceMetrics.ppi/72)
 		elseif (u == "em" and deviceMetrics) then
 			n = n * fontsize * (deviceMetrics.ppi/72)
 		end
+--print ("C Result:",n)
+--print ("  ")
 		return tonumber(n)
 	end
 end
@@ -645,7 +691,7 @@ local function closeDB( event )
 	if event.type == "applicationExit" then
 		if T.db and T.db:isopen() then
 			T.db:close()
-			print ("closeDB: Close")
+			--print ("closeDB: Close")
 		end
 	end
 end
@@ -875,7 +921,9 @@ local function alignRenderedLines(lines, stats)
 		elseif (stats[i].textAlignment == "Center") then
 			lines[i].anchorX = 0.5
 			-- currentWidth compensates for margins			
-			local c = stats[i].leftIndent + stats[i].firstLineIndent + (stats[i].currentWidth)/2
+			--local c = stats[i].leftIndent + stats[i].firstLineIndent + (stats[i].currentWidth)/2
+			--local c = stats[i].firstLineIndent + (stats[i].currentWidth)/2
+			local c = stats[i].firstLineIndent + (stats[i].width)/2
 			lines[i].x = c
 		else
 			lines[i].x = stats[i].leftIndent + stats[i].firstLineIndent
@@ -929,8 +977,9 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 	-- FIXED VALUES
 	-- These should probably be changeable somewhere!
 	
-	-- Used to track x location while creating a line of text
-	settings.currentXOffset = 0
+	-- Fudge factor -- pixels to add after a change in font scale (not size!)
+	-- which is how we handle superscript and subscript.
+	settings.fontscaleChangeFudge = 1
 	
 	-- Indent value in OL and UL lists
 	settings.listIndent = 10
@@ -939,12 +988,9 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 
 	-- ====================
 	
-	settings.isListTag = {
-		ol = true,
-		ul = true,
-	}
+	-- Used to track x location while creating a line of text
+	settings.currentXOffset = 0
 	
-
 	settings.deviceMetrics = funx.getDeviceMetrics( )
 
 	settings.minWordLen = 2
@@ -959,7 +1005,7 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 	local textstyles = textstyles or {}
 
 	local hyperlinkFillColor = "0,0,255,"..TRANSPARENT
-	local hyperlinkTextColor -- "0,0,255,"..OPAQUE
+	local hyperlinkTextColor = "0,0,255,"..OPAQUE
 	
 	T.cacheToDB = true
 
@@ -985,9 +1031,13 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 		cacheDir = text.cacheDir
 		settings.handler = text.handler
 		hyperlinkFillColor = text.hyperlinkFillColor or hyperlinkFillColor
-		hyperlinkTextColor = text.hyperlinkTextColor
+		hyperlinkTextColor = text.hyperlinkTextColor or hyperlinkTextColor
+		
+		sourceDirectory = text.sourceDirectory or false
+		sourcePath = text.sourcePath or false
 		
 		testing = testing or text.testing
+		noCache = noCache or text.noCache
 		
 		-- Default is true, allow set to false here
 		if (text.cacheToDB ~= nil) then
@@ -1025,7 +1075,7 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 	if (noCache) then
 		cacheDir = nil
 		T.cacheToDB = false
-		print ("WARNING: caching turned off for testing.")
+		print ("WARNING: textrender: caching turned off for testing.")
 	end
 		
 	-- Default is to cache using the sqlite3 database.
@@ -1283,7 +1333,10 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 			if (not params) then
 				return
 			end
-		
+
+-- testing:
+--local ss = funx.tableCopy(settings)
+
 			-- font
 			if (params[2] and params[2] ~= "") then settings.font = trim(params[2]) end
 			-- font size
@@ -1353,6 +1406,19 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 				-- Alignment happens after a whole line is built.
 				x = 0
 			end
+
+
+--print (" ------------------------------")
+--for k,v in pairs (settings) do
+--	if (ss[k] ~= settings[k]) then
+--		print ("--> " .. k .. " has changed to ", settings[k])
+--		if (type(settings[k]) == "table") then
+--			funx.dump(settings[k])
+--		end
+--		
+--	end
+--end
+--print (" ")
 		end
 
 
@@ -1367,6 +1433,10 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 			if (not format or format == {}) then
 				return 
 			end
+
+--			if (tag == "sup") then
+--				settings.currentXOffset = settings.currentXOffset + 1
+--			end
 			
 			-- font
 			if (format.font) then
@@ -1386,14 +1456,25 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 			end
 
 			if (format['scale']) then
+				local prevSize = settings.size
 				settings.size = applyPercent ( format.scale, settings.size, false)
+				-- If we shrink the scale, then we should move the text over just a little
+				-- to compensate, or it is too hard to read
+				if ( settings.size < prevSize ) then
+					--print ("REDUSED SCALE", prevSize, settings.size, (( prevSize - settings.size ) / prevSize ))
+					--local fudge = (( prevSize - settings.size ) / prevSize ) * 5
+					settings.currentXOffset = settings.currentXOffset + settings.fontscaleChangeFudge
+				end
 			end
-			
 			-- font size
 			if (format['font-size'] or format['size']) then
 				if (format['font-size']) then
 					-- convert pt values to px
 					settings.size = convertValuesToPixels(format['font-size'], settings.size, settings.deviceMetrics)
+					-- Change lineheight to match a change in font size when using
+					-- somethign like "x-large"
+					-- If the fontsize is not something like x-large, this will have no effect
+					lineHeight = lineHeight * keywordFontsizeRatio(format['font-size'])
 				else
 					settings.size = convertValuesToPixels(format['size'], settings.size, settings.deviceMetrics)
 				end
@@ -1401,7 +1482,7 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 				-- reset min char count in case we loaded a BIG font
 				settings.minLineCharCount = minCharCount or 5
 			end
-
+			
 			-- lineHeight (HTML property)
 			if (format.lineHeight) then
 				lineHeight = convertValuesToPixels (format.lineHeight, settings.size, settings.deviceMetrics)
@@ -1494,7 +1575,7 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 			-- Default to disc
 
 			-- bullet set to nothing!
-			if ( format['bullet'] == "" ) then
+			if ( format['bullet'] == "" or format['bullet'] == "none") then
 				settings.bullet = nil
 			elseif ( format['bullet'] == nil ) then
 			-- bullet not set, use default
@@ -1547,7 +1628,7 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 	-- with some fudge-factors.
 	local widthCorrection = 1
 	if (true) then
-		widthCorrection = 1.01--0.999
+		widthCorrection = 1.02--0.999
 	end
 
 
@@ -1886,7 +1967,7 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 					-- Function to render one parsed XML element, i.e a block of text
 					-- An element would be, for example: <b>piece of text</b>
 					------------------------------------------------------------
-					local function renderParsedElement(elementNum, element, tag, attr)
+					local function renderParsedElement(elementNum, element, tag, attr, renderIfEmpty)
 
 							local tempLineWidth, words
 							local firstWord = true
@@ -1956,12 +2037,6 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 							-- =======================================================
 							-- =======================================================
 							
-							-- Do not render empty elements or an element that is just a space
-							-- MUST return an empty table!
-							if (not element or element == " " ) then
-								return {}
-							end
-							
 							nextChunk = element or ""
 							nextChunkLen = strlen(nextChunk)
 
@@ -1970,7 +2045,12 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 								setStyleFromTag (tag, attr)
 							end
 
-
+							-- Do not render empty elements or an element that is just a space
+							-- MUST return an empty table!
+							if (not renderIfEmpty and ( not element or element == " " ) ) then
+								return {}
+							end
+							
 							baseline, descent, ascent = getFontAscent(baselineCache, settings.font, settings.size)
 
 							-- If we're at the very first line of a text block, these
@@ -2136,11 +2216,11 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 -- ============================================================
 
 
-								if (testing) then
-									print ("Rendering from XML, not cache.")
-									print ("")
-									print ("")
-								end
+--								if (testing) then
+--									print ("Rendering from XML, not cache.")
+--									print ("")
+--									print ("")
+--								end
 
 							---------------------------------------------
 								--local word,spacer
@@ -2247,20 +2327,20 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 
 
 
-		if (testing) then
-			print ()
-			print ("----------------------------")
-			print ("A: Render line: ["..currentLine .. "]")
---			print ("renderXMLvars.currentRenderedLineIndex:", renderXMLvars.currentRenderedLineIndex)
---			print ("Font: [".. settings.font .. "]")
-			print ("settings.currentWidth",settings.currentWidth)
-			print ("settings.isFirstLine", settings.isFirstLine)
-			print ("settings.elementOnFirstLine", settings.elementOnFirstLine)
-			print ("settings.isFirstTextInBlock", settings.isFirstTextInBlock)
-			print ("renderTextFromMargin: ", renderTextFromMargin)
-			print ("lineY = ",lineY)
-			-- print ("   newDisplayLineGroup.y = ",lineY + descent .. " + " .. descent)
-		end
+--		if (testing) then
+--			print ()
+--			print ("----------------------------")
+--			print ("A: Render line: ["..currentLine .. "]")
+----			print ("renderXMLvars.currentRenderedLineIndex:", renderXMLvars.currentRenderedLineIndex)
+----			print ("Font: [".. settings.font .. "]")
+--			print ("settings.currentWidth",settings.currentWidth)
+--			print ("settings.isFirstLine", settings.isFirstLine)
+--			print ("settings.elementOnFirstLine", settings.elementOnFirstLine)
+--			print ("settings.isFirstTextInBlock", settings.isFirstTextInBlock)
+--			print ("renderTextFromMargin: ", renderTextFromMargin)
+--			print ("lineY = ",lineY)
+--			-- print ("   newDisplayLineGroup.y = ",lineY + descent .. " + " .. descent)
+--		end
 
 														if (settings.isFirstLine) then
 															currentLineHeight = lineHeight
@@ -2460,15 +2540,15 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 														--cachedChunkIndex = cachedChunkIndex + 1
 
 	--print ("B")
-	if (testing) then
-		print ()
-		print ("----------------------------")
-		print ("B: render a word: "..word)
-		print ("\nrenderTextFromMargin reset to TRUE.")
-		print ("settings.isFirstLine", settings.isFirstLine)
-		print ("   newDisplayLineGroup.y",lineY + descent, descent)
-		print ("leftIndent + currentFirstLineIndent", settings.leftIndent, settings.currentFirstLineIndent, settings.currentXOffset)
-	end
+--	if (testing) then
+--		print ()
+--		print ("----------------------------")
+--		print ("B: render a word: "..word)
+--		print ("\nrenderTextFromMargin reset to TRUE.")
+--		print ("settings.isFirstLine", settings.isFirstLine)
+--		print ("   newDisplayLineGroup.y",lineY + descent, descent)
+--		print ("leftIndent + currentFirstLineIndent", settings.leftIndent, settings.currentFirstLineIndent, settings.currentXOffset)
+--	end
 
 														if (settings.isFirstLine) then
 															currentLineHeight = lineHeight
@@ -2627,22 +2707,22 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 								if (strlen(currentLine) > 0) then
 
 
-									if (testing) then
-										print ()
-										print ("----------------------------")
-										print ("C: Final line: ["..currentLine.."]", "length=" .. strlen(currentLine))
---										print ("Font: [".. settings.font .. "]")
---										print ("renderXMLvars.currentRenderedLineIndex:", renderXMLvars.currentRenderedLineIndex)
-										print ("lineY = ",lineY)
-										print ("settings.isFirstLine", settings.isFirstLine)
-										print ("settings.isFirstTextInBlock", settings.isFirstTextInBlock)
-										print ("renderTextFromMargin: ", renderTextFromMargin)
-										print ("Width,", settings.width)
-										print ("settings.currentWidth", settings.currentWidth)
---										print ("textAlignment: ", textAlignment)
---										print ("lineHeight: ", lineHeight)
-
-									end
+--if (testing) then
+--	print ()
+--	print ("----------------------------")
+--	print ("C: Final line: ["..currentLine.."]", "length=" .. strlen(currentLine))
+----										print ("Font: [".. settings.font .. "]")
+----										print ("renderXMLvars.currentRenderedLineIndex:", renderXMLvars.currentRenderedLineIndex)
+--	print ("lineY = ",lineY)
+--	print ("settings.isFirstLine", settings.isFirstLine)
+--	print ("settings.isFirstTextInBlock", settings.isFirstTextInBlock)
+--	print ("renderTextFromMargin: ", renderTextFromMargin)
+--	print ("Width,", settings.width)
+--	print ("settings.currentWidth", settings.currentWidth)
+----										print ("textAlignment: ", textAlignment)
+----										print ("lineHeight: ", lineHeight)
+--
+--end
 
 								
 									if (settings.isFirstLine) then
@@ -2670,10 +2750,10 @@ local function autoWrappedText(text, font, size, lineHeight, color, width, align
 									local newDisplayLineGroup = display.newGroup()
 								
 									currentLine = setCase(settings.case, currentLine)
-if (testing) then
-	print ("renderParsedElement: (C) : Substitutions in current line with 'settings' table values.")
-	currentLine = funx.substitutions (currentLine, settings)
-end
+--if (testing) then
+--	print ("renderParsedElement: (C) : Substitutions in current line with 'settings' table values.")
+--	currentLine = funx.substitutions (currentLine, settings)
+--end
 									
 									local newDisplayLineText = display.newText({
 										parent = newDisplayLineGroup,
@@ -2770,6 +2850,10 @@ end
 
 
 					end -- renderParsedElement()
+					
+					-- ================================================
+					-- END renderParsedElement()
+					-- ================================================
 
 					-- save the style settings as they are before
 					-- anything modifies them inside this tag.
@@ -2794,27 +2878,52 @@ end
 							-- @param pos Add current spacing before or after this CR
 							local function CRLF( pos, tag)
 								
-								local testing = false
-								
-								if (testing) then
-									tag = tag or ""
-									local c = settings.color
-									settings.color = {.8,0,0,0.7}
-									local pmarker = renderParsedElement(1, "¶ "..tag, "", "")
-									settings.color = c
-								end
 								pos = pos or "After"
 								lineY = lineY + lineHeight + settings["space"..pos]
-								--print ("CRLF ("..pos..") before/after",settings["spaceBefore"], settings["spaceAfter"])
+								--print (tag.." : CRLF ("..pos..") before/after, lineheight",settings["spaceBefore"], settings["spaceAfter"], lineHeight)
+							end
+							
+							local function renderHR()
+								-- Set style to HR
+								setStyleFromCommandLine (textstyles.hr or textstyles.body)
+
+								tempvar.hrLineSize = attr.size or (convertValuesToPixels(attr.height) or 1)
+								tempvar.width = applyPercent(attr.width, width) or width
+								tempvar.width = tempvar.width
+
+								local hrg = display.newGroup()
+								funx.addPosRect(hrg, testing)
+
+								local hr = display.newRect(hrg, 0, 0, tempvar.width, tempvar.hrLineSize)
+								funx.anchor(hr, "BottomLeft")
+								hr:setFillColor(0,0,0,1)
+								
+								addToCurrentRenderedLine(hrg, x, lineY, "Center", settings, "---")
 							end
 
+					
+					-- ================================================
+					-- NON-HTML : Move down a line using current lineheight.
+					-- ================================================
+					if (not settings.isHTML) then
+						CRLF( "Before" )
+
+						renderXMLvars.currentRenderedLineIndex = renderXMLvars.currentRenderedLineIndex + 1
+						renderTextFromMargin = true
+						settings.currentXOffset = 0
+						settings.isFirstLine = true
+						settings.currentLeftIndent = 0
+						settings.currentFirstLineIndent = 0
+						x = 0
+					end
+					
 					
 					-- ================================================
 					-- Tags reset margins
 					-- ================================================
 					-- Note, we treat <li> as a block, which is not standard HTML!
 
-					if ( blockTags[tag] ) then 
+					if ( isBlockTag[tag] ) then 
 
 						-- Reset margins, cursor, etc. to defaults
 						settings.elementOnFirstLine = true
@@ -2879,14 +2988,14 @@ end
 								b = entities.convert(b)
 							end
 							stacks.list[stacks.list.ptr] = { tag = tag, 
-										line = 1, 
+										line = 1,
+										counter = 0,
 										bullet = b, 
-										indent = settings.listIndent * (stacks.list.ptr - 1), 
+										indent = settings.listIndent * (stacks.list.ptr - 1),
 										leftIndent = settings.leftIndent or 0, 
 										rightIndent = settings.rightIndent or 0,
 										padding = convertValuesToPixels(attr.padding),
 										}
-
 						elseif  (tag == "li") then
 						-- ================================================
 						-- LI tag
@@ -2896,6 +3005,8 @@ end
 
 							-- ----------
 							-- Create the LI block
+
+							stacks.list[stacks.list.ptr].counter = stacks.list[stacks.list.ptr].counter + 1
 
 							-- Apply a 'value' attribute <li value="10" ...
 							if (attr.value) then
@@ -2939,39 +3050,24 @@ end
 								settings.leftIndent = spaceAfterBullet + bw
 							end
 
-
-
-						-- ================================================
-						-- BR tag
-						-- ================================================
 						elseif (tag == "hr") then
 						-- ================================================
 						-- HR tag
 						-- ================================================
-							-- Reset to Normal
-							setStyleFromCommandLine (textstyles.hr or textstyles.body)
-							
-							tempvar.hrLineSize = attr.size or (convertValuesToPixels(attr.height) or 1)
-							tempvar.width = applyPercent(attr.width, width) or width
-							tempvar.width = tempvar.width
-							
-							local hrg = display.newGroup()
-							funx.addPosRect(hrg, testing)
-							
-							local hr = display.newRect(hrg, 0, 0, tempvar.width, tempvar.hrLineSize)
-							funx.anchor(hr, "BottomLeft")
-							hr:setFillColor(0,0,0,1)
-							
-							addToCurrentRenderedLine(hrg, x, lineY, "Center", settings, "---")
+						--CRLF( "Before", tag )
 
 						end
 
 					elseif (tag == "br") then
-						renderTextFromMargin = true
-						settings.currentXOffset = 0
-						settings.currentLeftIndent = 0
-						settings.currentFirstLineIndent = 0
-						x = 0
+					-- ================================================
+					-- BR tag
+					-- BR is NOT a block tag!
+					-- ================================================
+--						renderTextFromMargin = true
+--						settings.currentXOffset = 0
+--						settings.currentLeftIndent = 0
+--						settings.currentFirstLineIndent = 0
+--						x = 0
 
 
 					-- ================================================
@@ -2983,10 +3079,15 @@ end
 						-- with a <span>. I mean, that's how the conversion comes in.
 						-- So, let's require that we color links by hand (or by InDesign)
 						-- Unless we pass the hyperlinkTextColor!
-						if (hyperlinkTextColor) then 
-							attr.color = "(" .. hyperlinkTextColor .. ")"	-- parens are parsed by setStyleFromTag()
+
+						-- Apply style based on textstyles "a" value, if it exists.
+						if ( textstyles[tag] ) then
+							setStyleFromCommandLine ( textstyles[tag] )
+						elseif (hyperlinkTextColor) then 
+							-- parens are parsed by setStyleFromTag()
+							attr.color = "(" .. hyperlinkTextColor .. ")"	
 						end
-						
+
 					-- Ignore <style> and <script> blocks.
 					elseif (tag == "style" or tag == "script" or tag=="head" ) then
 						parsedText = {}
@@ -2998,6 +3099,10 @@ end
 						x = 0
 						if (attr.src ) then
 							attr.directory = attr.directory or "ResourceDirectory"
+							-- replace "*" wildcard with location of the book, if provided
+							if (sourcePath) then
+								attr.src = funx.replaceWildcard(attr.src, sourcePath)
+							end
 							if (funx.fileExists( attr.src,  system[attr.directory] )) then
 								local image = funx.loadImageFile( attr.src, nil, system[attr.directory] )
 								anchor(image, "TopLeft")
@@ -3016,26 +3121,58 @@ end
 					
 
 
-
 					-- -------------------------------------------------------
 					-- Block-level elements start on a new line (HTML spec's)
 					-- If we treat <li> as a block, then we can't treat a nested <ul> or <ol> as a block,
 					-- too, or we get extra spaces.
-					if ( blockTags[tag] ) then
---						print("----------------------------")
---						print ("PRE LOOP) Current tag; Space before:",tag, settings.spaceBefore)
-
-						if ( not (listTags[tag] and stacks.list.ptr > 1)) then
+					-- Don't add space before the first element, either.
+					-- List Tags -> ul, ol
+					-- Add space before a ul/ol if it is not embedded in another list
+					-- Add space before li if not the first one in a list.
+					
+					if ( isBlockTag[tag] ) then
+--print ("BLOCK TAG",tag, stacks.list.ptr)
+						if (isListTag[tag]) then 
+							-- Don't add space before sub-lists.
+							if ( not (stacks.list.ptr > 1 ) ) then	
+								-- List Tags (ol/ul)
+								if (isListTag[tag]) then
+--	print ("A YES",tag,"counter=",stacks.list[stacks.list.ptr].counter)
+									CRLF( "Before", tag )
+								
+								-- other block tags
+								elseif ( stacks.list[stacks.list.ptr] and stacks.list[stacks.list.ptr].counter > 1) then
+--print ("B YES",tag,"counter=",stacks.list[stacks.list.ptr].counter)
+									CRLF( "Before", tag )
+								end
+							end
+						elseif tag == 'li' then
+							if ( stacks.list[stacks.list.ptr] and stacks.list[stacks.list.ptr].counter > 1) then
+--print ("C YES",tag,"counter=",stacks.list[stacks.list.ptr].counter)
+									CRLF( "Before", tag )
+							end
+						else
+						-- Not list tag
+--print ("Not a sublist:",tag, stacks.list.ptr)
 							CRLF( "Before", tag )
+--print ("D YES",tag )
 						end
-	
-					end
+--print ("D NO",tag, isListTag[tag], stacks.list.ptr, (not isListTag[tag]) and (stacks.list.ptr <= 1))
+--print (not isListTag[tag], stacks.list.ptr <= 1)
 
+					end
+					
+					
+					
+					-- -------------------------------------------------------
+					-- Handle the HR line here, AFTER adding the space before it
+					if (tag == "hr") then
+						renderHR()
+					end
 
 					-- -------------------------------------------------------
 					-- Render XML into lines of text
 					for n, element in ipairs(parsedText) do
-					
 						if (type(element) == "table") then
 						
 							-- This tag is the PARENT tag of the current element!!!
@@ -3043,18 +3180,20 @@ end
 
 --print("----------------------------")
 --print ("A) Parent Tag; current tag; in block?",tag, element._tag)
-
+--print ("lineY", lineY)					
 
 							-- Apply a font formatting tag, e.g. bold or italic
 							-- These settings cascade to nested elements
 							local saveStyleSettings = getAllStyleSettings()
+-- I AM NOT SURE THESE TAGS EVER GET HERE!?!?
 							if (tag == "span" or tag == "a" or tag == "b" or tag == "i" or tag == "em" or tag == "strong" or tag == "font" or tag == "sup" or tag == "sub" ) then
+								-- Now, apply any settings in the tag itself
 								setStyleFromTag (tag, attr)
 							end
 
 							local e = renderParsedText(element, element._tag, element._attr, parseDepth, stacks)
 							e.anchorX, e.anchorY = 0, 0
-							
+
 							-- Restore settings of parent element, saved above.
 							setStyleSettings(saveStyleSettings)
 
@@ -3062,9 +3201,9 @@ end
 							if (not element) then
 								print ("***** WARNING, EMPTY ELEMENT**** ")
 							end
---print ("B) Tag, text : ",tag, ":",  element)
+--print ("B) Tag, element : ",tag, ":",  element)
+--print ("lineY", lineY)
 							local saveStyleSettings = getAllStyleSettings()
-							
 							local e = renderParsedElement(n, element, tag, attr)
 							e.anchorX, e.anchorY = 0, 0
 							setStyleSettings(saveStyleSettings)
@@ -3074,11 +3213,12 @@ end
 					-- -------------------------------------------------------
 					
 
---print ("END OF LOOP")
+--print ("END OF LOOP", tag)
 
 					-- Close tags
 					-- AFTER rendering (so add afterspacing!)
-					if ( blockTags[tag] ) then
+					if ( isBlockTag[tag] ) then
+--print ("Got a block tag:", tag)
 						lineY = lineY + settings.currentSpaceAfter
 						renderXMLvars.currentRenderedLineIndex = renderXMLvars.currentRenderedLineIndex + 1
 						setStyleFromTag (tag, attr)
@@ -3086,28 +3226,21 @@ end
 						settings.isFirstLine = true
 						
 						settings.currentXOffset = 0
-						settings.isFirstLine = true						
+						settings.isFirstLine = true
 					end
 
 
-					if (tag == "br" or tag == "img") then
+					if (tag == "br" or tag == "img" ) then
+--print ("NEW LINE: br/img")
 						CRLF( "After", tag )
---print ("NEW LINE: br")
 						renderXMLvars.currentRenderedLineIndex = renderXMLvars.currentRenderedLineIndex + 1
-						setStyleFromTag (tag, attr)
 						renderTextFromMargin = true
 						settings.currentXOffset = 0
 						settings.isFirstLine = true
+						settings.currentLeftIndent = 0
+						settings.currentFirstLineIndent = 0
+						x = 0
 						
-					elseif (tag == "li") then
-						-- Treat <li> a block type
---						setStyleFromTag (tag, attr)
---						renderXMLvars.currentRenderedLineIndex = renderXMLvars.currentRenderedLineIndex + 1
---						renderTextFromMargin = true
---						-- Reset the first line of paragraph flag
---						settings.isFirstLine = true
---						CRLF( "After", tag )						
---print ("NEW LINE: li")
 					elseif (tag == "ul") then
 						renderXMLvars.currentRenderedLineIndex = renderXMLvars.currentRenderedLineIndex + 1
 						setStyleFromTag (tag, attr)
@@ -3134,6 +3267,18 @@ end
 						settings.currentXOffset = 0
 						setStyleFromTag (tag, attr)
 						--lineY = lineY + settings.currentSpaceAfter
+					end
+
+					if (not settings.isHTML) then
+						lineY = lineY + settings["spaceAfter"]
+						
+						renderXMLvars.currentRenderedLineIndex = renderXMLvars.currentRenderedLineIndex + 1
+						renderTextFromMargin = true
+						settings.currentXOffset = 0
+						settings.isFirstLine = true
+						settings.currentLeftIndent = 0
+						settings.currentFirstLineIndent = 0
+						x = 0
 					end
 
 					-- Now, overwrite Normal by restoring the style settings to what they were before
